@@ -169,10 +169,10 @@ will return an instance of ArnoldSchwarzenegger instead of an instance of Thespi
 == Examples
 
 A simple producer/consumer example.
-{https://github.com/cjbottaro/thespian/blob/master/examples/producer_consumer.rb}[https://github.com/cjbottaro/thespian/blob/master/examples/producer_consumer.rb]
+{\https://github.com/cjbottaro/thespian/blob/master/examples/producer_consumer.rb}[https://github.com/cjbottaro/thespian/blob/master/examples/producer_consumer.rb]
 
 An example where one actor links to another.
-{https://github.com/cjbottaro/thespian/blob/master/examples/linked.rb}[https://github.com/cjbottaro/thespian/blob/master/examples/linked.rb]
+{\https://github.com/cjbottaro/thespian/blob/master/examples/linked.rb}[https://github.com/cjbottaro/thespian/blob/master/examples/linked.rb]
 
 A complex example showing how a background job/task processor could be architected.
-{https://github.com/cjbottaro/thespian/blob/master/examples/task_processor.rb}[https://github.com/cjbottaro/thespian/blob/master/examples/task_processor.rb]
+{\https://github.com/cjbottaro/thespian/blob/master/examples/task_processor.rb}[https://github.com/cjbottaro/thespian/blob/master/examples/task_processor.rb]
