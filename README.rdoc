@@ -1,4 +1,4 @@
-== Thespian
+== Thespian {<img src="https://secure.travis-ci.org/cjbottaro/thespian.png" />}[http://travis-ci.org/cjbottaro/thespian]
 
 Implementation of the actor pattern built on threads.
 
