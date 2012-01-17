@@ -77,7 +77,7 @@ various methods will cause the exception to be raised in the calling thread.
   sleep(0.01)
   actor.error?    # => true
   actor.exception # #<RuntimeError: oops>
-  actor << 2      # raises actor.exception
+  actor << 2      # raises #<RuntimeError: oops>
 
 == Linking
 

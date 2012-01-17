@@ -7,9 +7,9 @@ Gem::Specification.new do |s|
   s.version     = Thespian::VERSION
   s.authors     = ["Christopher J. Bottaro"]
   s.email       = ["cjbottaro@alumni.cs.utexas.edu"]
-  s.homepage    = ""
-  s.summary     = %q{Implementation of actor pattern built on threads}
-  s.description = %q{Implementation of actor pattern built on threads}
+  s.homepage    = "https://github.com/cjbottaro/thespian"
+  s.summary     = %q{Implementation of actor pattern using threads}
+  s.description = %q{Ruby implementation of actor pattern built on threads}
 
   s.rubyforge_project = "thespian"
 

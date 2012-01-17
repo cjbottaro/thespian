@@ -1,20 +1,24 @@
 require "thespian"
-class Consumer
-  include Thespian
 
-  actor.receive do |message|
-    handle_message(message)
-  end
+producer = nil
+consumer = nil
 
-  def handle_message(message)
-    sleep(message)
-    puts "I slept for #{message} seconds"
+producer = Thespian::Actor.new do |message|
+  case message
+  when :need_item
+    consumer << rand
+  else
+    raise "unexpected message: #{message}"
   end
 end
 
-consumer = Consumer.new
-consumer.actor.start
-consumer.actor << rand
-consumer.actor << rand
-consumer.actor << rand
-consumer.actor.stop
+consumer = Thespian::Actor.new do |message|
+  sleep(message)
+  puts "consumer got #{message}"
+  producer << :need_item
+end
+
+producer.start
+consumer.start
+producer << :need_item
+sleep

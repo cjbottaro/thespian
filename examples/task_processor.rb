@@ -1,5 +1,12 @@
 require "thespian"
 
+# The actors are Supervisor, Logger, Poller, Worker(s).  There is one of each except for multiple
+# workers.  The basic idea is that the supervisor can send messages to any other actor, but all
+# other actors can only send messages to the supervisor.  In other words the non-supervisor actors
+# cannot directly communicate with each other; they have to go through the supervisor.
+
+# This actor just sits and waits for log messages to print out.  It has a 10% chance of erroring
+# on each message it processes.
 class Logger
   include Thespian
 
@@ -17,6 +24,9 @@ class Logger
 
 end
 
+# This actor is sent "work" messages.  When it's done with the work, it will send a message
+# with its id back to the supervisor saying that it's ready for more work.
+# It has a 10% chance of dying while processing a message.
 class Worker
   include Thespian
   attr_reader :id
@@ -36,13 +46,16 @@ class Worker
     when :work
       time, = *args
       sleep(time)
-      @supervisor.actor << [:log, "#{id} worked for #{time.round(2)} seconds"]
+      @supervisor.actor << [:log, "worker ##{id} worked for #{time.round(2)} seconds"]
       @supervisor.actor << [:ready, @id]
     end
   end
 
 end
 
+# This actor is responsible for getting "work" for a worker to do.  The supervisor will
+# send it a "get work" message, once it's retreived the work (maybe from a queue if this
+# was in the real world), it will send it back to the supervisor as "task ready" message.
 class Poller
   include Thespian
 
@@ -62,6 +75,14 @@ class Poller
 
 end
 
+# The supervisor is responsible for coordinating all the actors.  It's also responsible for
+# restarting any other actors that die (hence it needs to link to all of them).
+#
+# The basic idea is that the supervisor starts up each actor, then keeps a list of idle workers.
+# For each idle worker, it asks the poller for a task.  When the poller responds with a task,
+# it sends the task to the worker and removes the worker from the idle list.  When the worker
+# reports that it is finished, the worker is placed back in the idle list and the supervisor
+# asks the poller for another task.
 class Supervisor
   include Thespian
 
@@ -100,8 +121,6 @@ class Supervisor
 
   def do_log(message)
     @logger.actor << message
-  rescue StandardError
-    puts "!!!!!!!!!!!!!!!!!!!!!logger dead before message"
   end
 
   def do_ready(id)
@@ -117,7 +136,6 @@ class Supervisor
   def initialize_logger
     if @logger
       old_mailbox = @logger.actor.salvage_mailbox
-      puts "22222222222 #{old_mailbox.length}"
     end
     @logger = Logger.new
     actor.link(@logger)
