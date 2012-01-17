@@ -161,3 +161,7 @@ to it's parent object.
 
 What does that mean?  Nothing really.  The only difference is that Thespian::DeadActorError#actor
 will return an instance of ArnoldSchwarzenegger instead of an instance of Thespian::Actor.
+
+== RDoc
+
+{\http://doc.stochasticbytes.com/thespian/index.html}[http://doc.stochasticbytes.com/thespian/index.html]
