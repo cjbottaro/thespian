@@ -1,0 +1,163 @@
+== Thespian
+
+Implementation of the actor pattern built on threads.
+
+== Quickstart
+
+Dive in...
+
+  actor1 = Thespian::Actor.new do |message|
+    sleep(message) # Simulate work
+    puts "Actor1 worked for #{message} seconds"
+  end
+
+  actor2 = Thespian::Actor.new do |message|
+    sleep(message) # Simulate work
+    puts "Actor2 worked for #{message} seconds"
+  end
+
+  actor1.start
+  actor2.start
+
+  10.times{ actor1 << rand }
+  10.times{ actor2 << rand }
+
+  actor1.stop
+  actor2.stop
+
+Unlike other actor APIs, Thespian assumes you want your actor to loop forever, processing messages
+until it's told to stop.  Thus when you create an actor, all you have to do is specify how 
+to processes messages.
+
+  actor = Thespian::Actor.new do |message|
+    # ... handle message ...
+  end
+
+An actor won't start processing messages until the Thespian::Actor#start method is called.
+
+  actor.start
+
+Also, you cannot put messages into an actor's mailbox unless it is currently running.
+
+  actor << some_message # Will raise an exception if the actor isn't running
+
+You can change this behavior by changing the actor's strict option.
+
+  actor.options(:strict => false)
+
+Now you can add messages to the actor's mailbox, even if it's not running.
+
+== States
+
+An actor can be in one of three states:  +:initialized+, +:running+ or +:finished+
+
++:initialized+ is when the actor has been created, but Thespian::Actor#start hasn't been called (it's not
+in the message processing loop yet).
+
++:running+ is when #start has been called and it's processing (or waiting on) messaegs.
+
++:finished+ is when the actor is no longer processing messages (it was either instructed to stop or
+an error occurred).
+
+  actor = Thespian::Actor.new{ ... }
+  actor.state # => :initialized
+
+== Error handling
+
+What happens if an actor causes an unhandled exception while processing a message?  The actor's
+state will be set to +:finished+, Thespian::Actor#error? will return true and subsequent calls to
+various methods will cause the exception to be raised in the calling thread.
+
+  actor = Thespian::Actor.new do |message|
+    raise "oops"
+  end
+
+  actor.start
+  actor << 1
+  sleep(0.01)
+  actor.error?    # => true
+  actor.exception # #<RuntimeError: oops>
+  actor << 2      # raises actor.exception
+
+== Linking
+
+You can link actors together so that if an error occurs in one, it will trickle up to all that
+are linked to it.
+
+
+  actor1 = Thespian::Actor.new do |message|
+    puts message.inspect
+  end
+
+  actor2 = Thespian::Actor.new do |message|
+    raise "oops"
+  end
+
+  actor1.link(actor2)
+  actor1.start
+  actor2.start
+
+  actor2 << "blah"
+  sleep(0.01)
+
+  actor1.error?    # => true
+  actor1.exception # => #<Thespian::DeadActorError: oops>
+
+Thespian::DeadActorError contains information about which actor died and the exception that caused it.
+
+== Trapping linked errors
+
+If you specify the +:trap_exit+ option, then instead of raising a Thespian::DeadActorError in the linked
+actor, it will be put in the actor's mailbox instead.
+
+  actor1 = Thespian::Actor.new do |message|
+    puts message.inspect
+  end
+
+  actor2 = Thespian::Actor.new do |message|
+    raise "oops"
+  end
+
+  actor1.options(:trap_exit => true)
+  actor1.link(actor2)
+  actor1.start
+  actor2.start
+
+  actor2 << "blah"
+  sleep(0.01)
+
+  actor1.error?    # => false
+  actor1.exception # => nil
+
+This will print <tt>#<Thespian::DeadActorError: oops></tt> to stdout.
+
+== Classes
+
+You can use Thespian with classes by including the Thespian module into them.
+
+  class ArnoldSchwarzenegger
+    include Thespian
+
+    actor.receive do |message|
+      handle_message(message)
+    end
+
+    def handle_message(message)
+      puts message
+    end
+  end
+
+  arnold = ArnoldSchwarzenegger.new
+  arnold.actor.start
+  arnold.actor << "I'm a cop, you idiot!"
+  arnold.actor.stop
+
+The block given to +actor.receive+ on the class is exactly the same as the block given to
+Thespian::Actor.new except that it is run in the context of an instance of the class (meaning it
+can call instance methods).
+
++actor+ on the instance returns a special instance of Thespian::Actor, that is aware of its relationship
+to it's parent object.
+
+What does that mean?  Nothing really.  The only difference is that Thespian::DeadActorError#actor
+will return an instance of ArnoldSchwarzenegger instead of an instance of Thespian::Actor.
