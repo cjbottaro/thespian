@@ -169,6 +169,11 @@ module Thespian
       !!@exception
     end
 
+    # Returns how many messages are in the actor's mailbox.
+    def mailbox_size
+      @mailbox_lock.synchronize{ @mailbox.size }
+    end
+
     # Salvage mailbox contents from a dead actor (including the message it died on).
     # Useful for restarting a dead actor while preserving its mailbox.
     def salvage_mailbox

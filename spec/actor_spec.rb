@@ -140,5 +140,15 @@ module Thespian
 
     end
 
+    context "#mailbox_size" do
+
+      it "returns how many messages are in the mailbox" do
+        actor = Actor.new :strict => false
+        actor << 1 << 2 << 3
+        actor.mailbox_size.should == 3
+      end
+
+    end
+
   end
 end

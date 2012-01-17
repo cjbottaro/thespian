@@ -30,8 +30,13 @@ module Thespian
 
   module ClassMethods #:nodoc:
     
-    def actor
+    def actor(&block)
       @actor ||= Dsl.new
+      if block_given?
+        @actor.receive(&block)
+      else
+        @actor
+      end
     end
 
   end

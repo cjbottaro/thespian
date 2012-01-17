@@ -1,2 +1,8 @@
+0.0.2 
+	* The actor method on classes can now takes a block as a shortcut
+	for actor.receive.
+	* Added Thespian::Actor#mailbox_size
+
+
 0.0.1
 	* Initial release
