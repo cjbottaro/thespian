@@ -2,6 +2,8 @@ require "thespian/actor"
 require "thespian/dsl"
 require "thespian/version"
 
+require "thespian/strategies/interface"
+
 # Include this module into classes to give them acting abilities.
 #   class ArnoldSchwarzenegger
 #     include Thespian

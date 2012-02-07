@@ -13,6 +13,9 @@ module Thespian
     # Returns the actor's state.
     attr_reader :state
 
+    attr_reader :strategy
+    private :strategy
+
     # The state an actor is in after it has been created, but before it enters the message processing loop.
     STATE_INITIALIZED = :initialized
 
@@ -23,6 +26,7 @@ module Thespian
     STATE_FINISHED = :finished
 
     DEFAULT_OPTIONS = {
+      :mode      => :thread,
       :strict    => true,
       :trap_exit => false,
       :object    => nil
@@ -42,10 +46,12 @@ module Thespian
       @receive_block = block
       @linked_actors = Set.new
 
-      @mailbox = []
-      @mailbox_lock = Monitor.new
-      @mailbox_cond = @mailbox_lock.new_cond
+      @strategy = strategy_class.new{ run }
+    end
 
+    def strategy_class #:nodoc:
+      class_name = options[:mode].to_s.capitalize
+      Strategy.const_get(class_name)
     end
 
     # call-seq:
@@ -54,6 +60,9 @@ module Thespian
     #   options(symbol) -> value
     #
     # Get or set options.  Valid options are:
+    # [:mode (default :thread)]
+    #   What mode to create the actor in.  Choices are +:fiber+ or +:thread+.  When running in fibered mode,
+    #   be sure that EventMachine's reactor is running and there is a root fiber.
     # [:strict (default true)]
     #   Require an actor to be running in order to put messages into its mailbox.
     # [:trap_exit (default false)]
@@ -106,25 +115,7 @@ module Thespian
       # before staring the thread.
       @state = :running
 
-      # Declare local synchronization vars.
-      lock = Monitor.new
-      cond = lock.new_cond
-      wait = true
-
-       # Start the thread and have it signal when it's running.
-      @thread = Thread.new do
-        Thread.current[:actor] = options(:object).to_s
-        lock.synchronize do
-          wait = false
-          cond.signal
-        end
-        run
-      end
-
-      # Block until the thread has signaled that it's running.
-      lock.synchronize do
-        cond.wait_while{ wait }
-      end
+      @strategy.start
     end
 
     # Add a message to the actor's mailbox.
@@ -132,10 +123,7 @@ module Thespian
     def <<(message)
       check_alive! if options(:strict)
       message = message.new if message == Stop
-      @mailbox_lock.synchronize do
-        @mailbox << message
-        @mailbox_cond.signal
-      end
+      @strategy << message
       self
     end
 
@@ -145,7 +133,7 @@ module Thespian
     def stop
       check_alive! if options(:strict)
       self << Stop.new
-      @thread.join
+      @strategy.stop
       raise @exception if @exception
     end
 
@@ -171,15 +159,15 @@ module Thespian
 
     # Returns how many messages are in the actor's mailbox.
     def mailbox_size
-      @mailbox_lock.synchronize{ @mailbox.size }
+      @strategy.mailbox_size
     end
 
     # Salvage mailbox contents from a dead actor (including the message it died on).
     # Useful for restarting a dead actor while preserving its mailbox.
     def salvage_mailbox
-      raise "cannot salvage mailbox from an actor that isn't finished" unless state == :finished
-      @mailbox.dup.tap do |mailbox|
-        mailbox.unshift(@last_message) if @last_message
+      raise "cannot salvage mailbox from an actor that isn't finished" unless finished?
+      @strategy.messages.tap do |messages|
+        messages.unshift(@last_message) if @last_message
       end
     end
 
@@ -207,13 +195,9 @@ module Thespian
 
     # Receive a message from the actor's mailbox.
     def receive
-      message = @mailbox_lock.synchronize do
-        @mailbox_cond.wait_while{ @mailbox.empty? }
-        @message = @mailbox.shift
-      end
 
       # Communicate with #run by possibly raising exceptions here.
-      case message
+      case (message = @strategy.receive)
       when DeadActorError
         raise message unless options(:trap_exit)
       when Stop

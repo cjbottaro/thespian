@@ -1,4 +1,5 @@
 require "thespian"
+require "thespian/example"
 
 # The actors are Supervisor, Logger, Poller, Worker(s).  There is one of each except for multiple
 # workers.  The basic idea is that the supervisor can send messages to any other actor, but all
@@ -114,7 +115,7 @@ class Supervisor
       do_log("worker(#{actor.id}) died, restarting")
       initialize_worker(actor.id)
     when Poller
-      do_log("poller died (#{@ready.length}, #{@poller.actor.instance_eval{ @mailbox }.length}), restarting")
+      do_log("poller died (#{@ready.length}, #{@poller.actor.mailbox_size}), restarting")
       initialize_poller
     end
   end
@@ -163,8 +164,11 @@ class Supervisor
 
 end
 
-s = Supervisor.new(5)
-while true
-  raise s.actor.exception unless s.actor.running?
-  sleep(1)
+Thespian::Example.run do
+  s = Supervisor.new(5)
+  while true
+    sleep(1)
+    raise s.actor.exception unless s.actor.running?
+    puts "Total threads: #{Thread.list.length}"
+  end
 end

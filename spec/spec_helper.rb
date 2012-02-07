@@ -1,31 +1,24 @@
 require "thespian"
+require "rr"
+require "pry"
+
+# Shared examples
+require "strategies/interface"
 
 module ActorHelper
+
+  def self.extended(object)
+    class << object
+      public :strategy
+      public :receive
+    end
+  end
 
   def linked_actors
     @linked_actors
   end
 
-  def thread
-    @thread
-  end
-
-  def mailbox
-    @mailbox
-  end
-
-  def mailbox_cond
-    @mailbox_cond
-  end
-
-  # To get around receive being private
-  def receive
-    super
-  end
-
 end
-
-require 'rr'
 
 module RR
   module Adapters

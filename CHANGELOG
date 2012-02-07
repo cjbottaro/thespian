@@ -1,6 +1,8 @@
-0.0.2 
-	* The actor method on classes can now takes a block as a shortcut
-	for actor.receive.
+0.1.0 
+	* Added support for different modes
+		* Threaded mode (default)
+		* Fibered mode
+	* Added Thespian.actor{ ... } as alias for Thespian.actor.receive{ ... }
 	* Added Thespian::Actor#mailbox_size
 
 

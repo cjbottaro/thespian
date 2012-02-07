@@ -3,8 +3,9 @@ require "spec_helper"
 module Thespian
   describe Actor do
 
+    let(:actor){ Actor.new.extend(ActorHelper) }
+
     context "#new" do
-      let(:actor){ Actor.new }
 
       it "returns a new Actor" do
         actor.should be_a(Actor)
@@ -13,6 +14,16 @@ module Thespian
       it "that is initialized" do
         actor.should be_initialized
       end
+
+      it "using the Thread strategy" do
+        actor.strategy.should be_a(Strategy::Thread)
+      end
+
+      it "using the Fiber strategy" do
+        actor = Actor.new(:mode => :fiber).extend(ActorHelper)
+        actor.strategy.should be_a(Strategy::Fiber)
+      end
+
     end
 
     context "#link" do
@@ -36,9 +47,9 @@ module Thespian
     end
 
     context "#start" do
-      let(:actor){ Actor.new.extend(ActorHelper) }
 
-      before(:all) do
+      before(:each) do
+        stub(actor.strategy).start
         actor.start
       end
 
@@ -46,43 +57,41 @@ module Thespian
         actor.should be_running
       end
 
-      it "starts a thread" do
-        actor.thread.should be_alive
+      it "calls Strategy#start" do
+        actor.strategy.should have_received.start
       end
     end
 
     context "#receive" do
-      let(:actor){ Actor.new.extend(ActorHelper) }
 
       it "returns the next message from the actor's mailbox" do
-        actor.mailbox << "hello"
+        mock(actor.strategy).receive{ "hello" }
         actor.receive.should == "hello"
       end
 
       it "raises a DeadActorError if that's what's in the mailbox" do
-        actor.mailbox << DeadActorError.new(actor, "blah")
+        mock(actor.strategy).receive{ DeadActorError.new(actor, "blah") }
         expect{ actor.receive }.to raise_error(DeadActorError)
       end
 
       it "raises a Stop exception if that's what's in the mailbox" do
-        actor.mailbox << Stop.new
+        mock(actor.strategy).receive{ Stop.new }
         expect{ actor.receive }.to raise_error(Stop)
       end
 
       it "returns DeadActorError if trap_exit is true and that's what's in the mailbox" do
-        actor.mailbox << DeadActorError.new(actor, "blah")
+        mock(actor.strategy).receive{ DeadActorError.new(actor, "blah") }
         actor.options(:trap_exit => true)
         actor.receive.should be_a(DeadActorError)
       end
     end
 
     context "#<<" do
-      let(:actor){ Actor.new.extend(ActorHelper) }
 
       it "puts an item into the mailbox" do
         stub(actor).running?{ true }
+        mock(actor.strategy).<<("hello")
         actor << "hello"
-        actor.mailbox.should include("hello")
       end
 
       it "raises a RuntimeError if the actor isn't alive" do
@@ -93,23 +102,22 @@ module Thespian
       it "works on a dead actor if strict is false" do
         actor.should_not be_running
         actor.options :strict => false
+        mock(actor.strategy).<<("blah")
         actor << "blah"
-        actor.mailbox.should include("blah")
       end
     end
 
     context "#stop" do
-      let(:actor){ Actor.new.extend(ActorHelper) }
 
       it "raises an exception if the actor isn't alive" do
         expect{ actor.stop }.to raise_error(RuntimeError, /not running/i)
       end
 
       it "puts a Stop message in the actor's mailbox" do
-        mock(actor).running?{ true }.times(2)
-        mock(actor.thread).join
+        stub(actor).check_alive!{ true }
+        mock(actor.strategy).<<(is_a(Stop))
+        mock(actor.strategy).stop
         actor.stop
-        actor.mailbox[0].should be_a(Stop)
       end
     end
 
@@ -121,21 +129,16 @@ module Thespian
       end
 
       it "doesn't include the last message if the actor stopped properly" do
-        actor = Actor.new.extend(ActorHelper)
-        actor.mailbox.replace([1, 2, 3, Stop.new, 4, 5])
-        actor.start
-        Thread.pass while actor.running?
-        actor.salvage_mailbox.should == [4, 5]
+        mock(actor.strategy).messages{ [2, 3] }
+        mock(actor).finished?{ true }
+        actor.salvage_mailbox.should == [2, 3]
       end
 
       it "includes the last message if the actor error'ed" do
-        actor = Actor.new do |message|
-          raise "oops" if message == 3
-        end.extend(ActorHelper)
-        actor.mailbox.replace([1, 2, 3, 4, 5])
-        actor.start
-        Thread.pass while actor.running?
-        actor.salvage_mailbox.should == [3, 4, 5]
+        actor.instance_eval{ @last_message = 1 }
+        mock(actor.strategy).messages{ [2, 3] }
+        mock(actor).finished?{ true }
+        actor.salvage_mailbox.should == [1, 2, 3]
       end
 
     end
@@ -143,8 +146,7 @@ module Thespian
     context "#mailbox_size" do
 
       it "returns how many messages are in the mailbox" do
-        actor = Actor.new :strict => false
-        actor << 1 << 2 << 3
+        mock(actor.strategy).mailbox_size{ 3 }
         actor.mailbox_size.should == 3
       end
 

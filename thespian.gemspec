@@ -23,5 +23,8 @@ Gem::Specification.new do |s|
   s.add_development_dependency "rr"
   s.add_development_dependency "rdoc"
   s.add_development_dependency "rake"
+  s.add_development_dependency "pry"
+  s.add_development_dependency "strand"
+  s.add_development_dependency "eventmachine"
   # s.add_runtime_dependency "rest-client"
 end
