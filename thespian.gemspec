@@ -8,8 +8,8 @@ Gem::Specification.new do |s|
   s.authors     = ["Christopher J. Bottaro"]
   s.email       = ["cjbottaro@alumni.cs.utexas.edu"]
   s.homepage    = "https://github.com/cjbottaro/thespian"
-  s.summary     = %q{Implementation of actor pattern using threads}
-  s.description = %q{Ruby implementation of actor pattern built on threads}
+  s.summary     = %q{Implementation of actor pattern for use with threads and/or fibers}
+  s.description = %q{Ruby implementation of actor pattern for use with threads and/or fibers}
 
   s.rubyforge_project = "thespian"
 

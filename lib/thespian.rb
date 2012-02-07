@@ -32,8 +32,9 @@ module Thespian
 
   module ClassMethods #:nodoc:
     
-    def actor(&block)
+    def actor(options = nil, &block)
       @actor ||= Dsl.new
+      @actor.options = options if options
       if block_given?
         @actor.receive(&block)
       else
@@ -46,7 +47,7 @@ module Thespian
   module InstanceMethods #:nodoc:
 
     def actor
-      @actor ||= Actor.new(:object => self, &self.class.actor.receive_block)
+      @actor ||= Actor.new(self.class.actor.options.merge(:object => self), &self.class.actor.receive_block)
     end
 
   end

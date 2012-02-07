@@ -1,6 +1,6 @@
 == Thespian {<img src="https://secure.travis-ci.org/cjbottaro/thespian.png" />}[http://travis-ci.org/cjbottaro/thespian]
 
-Implementation of the actor pattern built on threads.
+Implementation of the actor pattern built for use with threads and/or fibers.
 
 == Quickstart
 
@@ -66,7 +66,7 @@ an error occurred).
 
 What happens if an actor causes an unhandled exception while processing a message?  The actor's
 state will be set to +:finished+, Thespian::Actor#error? will return true and subsequent calls to
-various methods will cause the exception to be raised in the calling thread.
+various methods will cause the exception to be raised in the calling thread or fiber.
 
   actor = Thespian::Actor.new do |message|
     raise "oops"
@@ -161,6 +161,49 @@ to it's parent object.
 
 What does that mean?  Nothing really.  The only difference is that Thespian::DeadActorError#actor
 will return an instance of ArnoldSchwarzenegger instead of an instance of Thespian::Actor.
+
+== Fibers
+
+Actors run on threads by default, but you can seamlessly run them on fibers instead:
+
+  actor = Thespian::Actor.new(:mode => :fiber){ ... }
+
+Or:
+
+  class ArnoldSchwarzenegger
+    include Thespian
+
+    # Any of these will work
+
+    actor(:mode => :fiber).receive{ |message| ... }
+
+    actor.options[:mode] = :fiber
+  end
+
+When running in fibered mode, be sure that your actors are executing inside EventMachine's reactor loop.
+Also be sure that there is a root fiber.  In other words, something like...
+
+  EventMachine.run do
+    Fiber.new do
+
+      ###
+      # Your actor code here
+      ###
+
+      EventMachine.stop
+    end.resume
+  end
+
+Thespian uses {Strand}[https://github.com/cjbottaro/strand] behind the scenes which to deal with fibers.
+{Strand}[https://github.com/cjbottaro/strand] is an abstraction that makes fibers behave like threads when
+used with EventMachine.  You will need to install {Strand}[https://github.com/cjbottaro/strand] to use
+Thespian in fibered mode:
+
+  gem "strand"
+
+You can change the default mode for all Actors with the following:
+
+  Thespian::Actor::DEFAULT_OPTIONS[:mode] = :fiber
 
 == RDoc
 

@@ -35,6 +35,21 @@ module Thespian
           @class.actor.receive_block.should be_a(Proc)
         end
 
+        it "allows you to set options when defining the message handling block" do
+          @class.new.actor.options[:mode].should == :thread
+          @class.actor(:mode => :fiber){ |message| nil }
+          @class.new.actor.options[:mode].should == :fiber
+          @class.actor(:mode => :thread){ |message| nil }
+          @class.new.actor.options[:mode].should == :thread
+        end
+
+        it "allows you to set options" do
+          @class.new.actor.options[:mode].should == :thread
+          @class.actor.options[:mode] = :fiber
+          @class.actor{ |message| nil }
+          @class.new.actor.options[:mode].should == :fiber
+        end
+
       end
 
       context "#actor on instances of the class" do
