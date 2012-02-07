@@ -76,7 +76,7 @@ module Thespian
 
         it "puts a stop message in the mailbox" do
           strategy.stop
-          strategy.messages.should include(Stop.new)
+          strategy.messages.any?{ |m| m.kind_of?(Stop)}.should be_true
         end
 
         it "blocks until the async primitive is done" do

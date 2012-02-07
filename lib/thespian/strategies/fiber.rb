@@ -1,3 +1,9 @@
+begin
+  require "fiber"
+rescue LoadError
+  raise "Thespian requires Ruby >= 1.9 to run in fibered mode"
+end
+
 require "strand"
 
 module Thespian

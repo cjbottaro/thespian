@@ -57,3 +57,12 @@ RSpec.configure do |config|
   config.mock_with :rr
 end
 
+def supports_fibers?
+  begin
+    require "fiber"
+  rescue LoadError
+    false
+  else
+    true
+  end
+end

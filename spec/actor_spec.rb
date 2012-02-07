@@ -19,9 +19,19 @@ module Thespian
         actor.strategy.should be_a(Strategy::Thread)
       end
 
-      it "using the Fiber strategy" do
-        actor = Actor.new(:mode => :fiber).extend(ActorHelper)
-        actor.strategy.should be_a(Strategy::Fiber)
+      if supports_fibers?
+
+        it "using the Fiber strategy" do
+          actor = Actor.new(:mode => :fiber).extend(ActorHelper)
+          actor.strategy.should be_a(Strategy::Fiber)
+        end
+
+      else
+
+        it "raises an exception if trying to run in fibered mode" do
+          expect{ Actor.new(:mode => :fiber) }.to raise_error(RuntimeError)
+        end
+
       end
 
     end
