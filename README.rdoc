@@ -173,11 +173,15 @@ Or:
   class ArnoldSchwarzenegger
     include Thespian
 
-    # Any of these will work
-
+    # This will work
     actor(:mode => :fiber).receive{ |message| ... }
 
+    # Or this for short
+    actor(:mode => :fiber){ |message| ... }
+
+    # Or even this
     actor.options[:mode] = :fiber
+    actor{ |message| ... }
   end
 
 When running in fibered mode, be sure that your actors are executing inside EventMachine's reactor loop.
@@ -194,7 +198,7 @@ Also be sure that there is a root fiber.  In other words, something like...
     end.resume
   end
 
-Thespian uses {Strand}[https://github.com/cjbottaro/strand] behind the scenes which to deal with fibers.
+Thespian uses {Strand}[https://github.com/cjbottaro/strand] behind the scenes to deal with fibers.
 {Strand}[https://github.com/cjbottaro/strand] is an abstraction that makes fibers behave like threads when
 used with EventMachine.  You will need to install {Strand}[https://github.com/cjbottaro/strand] to use
 Thespian in fibered mode:
